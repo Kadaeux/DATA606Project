@@ -7,7 +7,15 @@ author: Nicholas Kunze
 
 ```{r setup, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
 # load data
-load("yourdirectory/someworkspace.RData")
+wvs7 <- load("data/WVS_Cross-National_Wave_7_rData_v5_0.rdata")
+na_wvs <- subset(wvs7, `WVS_Cross-National_Wave_7_v5_0`$B_COUNTRY_ALPHA == "USA" | `WVS_Cross-National_Wave_7_v5_0`$B_COUNTRY_ALPHA == "CAN")
+
+# Rename columns to be more useful - each question in the master pdf maps to a
+# column in the df, joined over q#
+
+
+
+
 ```
 
 

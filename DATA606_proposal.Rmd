@@ -1,71 +1,150 @@
 ---
-title: DATA 606 Data Project Proposal
-author: Nicholas Kunze
+title: "DATA 606 Data Project Proposal"
+author: "Nicholas Kunze"
+output: pdf_document
 ---
 
 ### Data Preparation
 
 ```{r setup, echo=TRUE, results='hide', warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(psych)
+
 # load data
-wvs7 <- load("data/WVS_Cross-National_Wave_7_rData_v5_0.rdata")
-na_wvs <- subset(wvs7, `WVS_Cross-National_Wave_7_v5_0`$B_COUNTRY_ALPHA == "USA" | `WVS_Cross-National_Wave_7_v5_0`$B_COUNTRY_ALPHA == "CAN")
+load("data/WVS_Cross-National_Wave_7_rData_v5_0.rdata")
+wvs <- `WVS_Cross-National_Wave_7_v5_0`
+
+# Luckily the data is already tidy, with each row representing one observation,
+# a person surveyed. And each column represents a variable. 
+# As this includes every question from the survey, there are over 600 columns..
+# Let's select only those that we need. 
+wvs <- select(wvs, B_COUNTRY_ALPHA, Q46, Q106, Q107, Q108)
 
 # Rename columns to be more useful - each question in the master pdf maps to a
-# column in the df, joined over q#
+# column in the df
+wvs <- setNames(wvs, c("Country", "Happiness", "Individual_Effort",
+                       "Govt_Business_Ownership", "Personal_Responsibility"))
 
+# Exclude respondnets who did not respond or did not know any of the relevant questions
+wvs <- subset(wvs, Happiness > 0 & 
+                Individual_Effort > 0 & 
+                Govt_Business_Ownership > 0 & 
+                Personal_Responsibility > 0)
 
-
-
+# Let's also invert the store of all of the GO scores so that 10 represents the most
+# individualistic, like the other two independent variables. I invert the scale by
+# using max - VAL + min. Then we swap the name.
+wvs$Govt_Business_Ownership <- 10 - wvs$Govt_Business_Ownership + 1
+names(wvs)[names(wvs) == "Govt_Business_Ownership"] <- "Private_Business_Ownership"
 ```
 
+```{r}
+wvs[sample(nrow(wvs),5),]
+```
 
-### Research question 
+### Research question
 
 **You should phrase your research question in a way that matches up with the scope of inference your dataset allows for.**
 
+Are countries' populations' economic values, specifically individualist with less government oversight and responsibility, predictive of lower overall happiness?
 
+### Cases
 
-### Cases 
+**You should phrase your research question in a way that matches up with the scope of inference your dataset allows for.**
 
-**What are the cases, and how many are there?**
+Each case represents a country. There are 64 countries represented in this dataset.
 
-
-
-### Data collection 
+### Data collection
 
 **Describe the method of data collection.**
 
+Data is collected by the World Values Survey. Each participatory nation has a national team responsible for surveying. The minimum sample size is 1200 per nation, with sampling done with different methodology per team. The surveyor will generally perform the data collection with a paper questionnaire at the respondent's place of residence.
 
+A deeper look at the WVS's fieldwork and sampling can be obtained [here](https://www.worldvaluessurvey.org/WVSContents.jsp?CMSID=FieldworkSampling&CMSID=FieldworkSampling#:~:text=Survey%20method,(Computer%20Assisted%20Personal%20Interview).){style="color: blue"}.
 
-### Type of study 
+### Type of study
 
 **What type of study is this (observational/experiment)?**
 
+This is an observational study.
 
-
-### Data Source 
+### Data Source
 
 **If you collected the data, state self-collected. If not, provide a citation/link.**
 
+Data is collected by WVS and is available online here: <https://www.worldvaluessurvey.org/WVSDocumentationWV7.jsp>
 
+For this project, the data archive was downloaded locally as a url to directly access the rdata from was not made available. The local rdat file was loaded then loaded.
 
+> Haerpfer, C., Inglehart, R., Moreno, A., Welzel, C., Kizilova, K., Diez-Medrano, J., Lagos, M., Norris, P., Ponarin, E. & Puranen B. (2022): World Values Survey Wave 7 (2017-2022) Cross-National Data-Set. Version: 4.0.0. World Values Survey Association. DOI: doi.org/10.14281/18241.18
 
 ### Dependent Variable
 
 **What is the response variable? Is it quantitative or qualitative?**
 
-
+The response variable is happiness score. It is quantitative. It ranges from 4 (least happy) to 1 (most happy).
 
 ### Independent Variable(s)
 
+The independent variables are *Individual_Effort,* 'incentivization of individual effort', *Govt_Business_Ownership,* 'belief in government business ownership', and *Personal_Responsibility,* 'personal responsibility over government responsibility for population'. All are quantitative and range from 1 to 10.
 
+![](images/clipboard-1721063137.png)
 
-
-### Relevant summary statistics 
+### Relevant summary statistics
 
 **Provide summary statistics for each the variables. Also include appropriate visualizations related to your research question (e.g. scatter plot, boxplots, etc). This step requires the use of R, hence a code chunk is provided below. Insert more code chunks as needed.**
 
 ```{r}
+summary(wvs$Happiness)
+summary(wvs$Individual_Effort)
+summary(wvs$Private_Business_Ownership)
+summary(wvs$Personal_Responsibility)
 
+hist(wvs$Happiness, main="World Happiness Ratings",xlab="Happiness Rating",breaks=seq(0.5,4.5,by=1))
+hist(wvs$Individual_Effort, 
+     main="Belief in Individual Effort Incentivization\n over Government-controlled Income Flattening", 
+     xlab="Belief in Invidiual Effort", 
+     breaks=seq(-0.5,10.5,by=1))
+hist(wvs$Private_Business_Ownership, 
+     main="Belief in Private over Public Business Ownership", 
+     xlab="Belief in Private Business Ownership", 
+     breaks=seq(-0.5,10.5,by=1))
+hist(wvs$Personal_Responsibility, 
+     main="Belief that People should Provide for Themselves More\n than Government Collective Responsibility", 
+     xlab="Belief in Personal Responsibility", 
+     breaks=seq(-0.5,10.5,by=1))
+
+# Calculate survey respondent's 'individualism' as mean of the three variables
+wvs$Individualism <- rowMeans(wvs[,c("Individual_Effort",
+                                     "Private_Business_Ownership",
+                                     "Personal_Responsibility")])
+
+cor(wvs$Individualism,wvs$Happiness)
+ggplot(wvs, aes(Individualism, Happiness)) +
+  geom_jitter() +
+  geom_smooth(method = 'lm',
+              geom = "smooth")
 ```
 
+```{r}
+wvs_countries <- wvs %>%
+  group_by(Country) %>%
+  summarise(Country = unique(Country),
+            Happiness_Mean = mean(Happiness),
+            Individual_Effort_Mean = mean(Individual_Effort),
+            Private_Business_Ownership_Mean = mean(Private_Business_Ownership),
+            Personal_Responsibility_Mean = mean(Personal_Responsibility))
+
+plot(wvs_countries$Individual_Effort_Mean, 
+     wvs_countries$Happiness_Mean)
+abline(lm(wvs_countries$Individual_Effort_Mean ~ wvs_countries$Happiness_Mean))
+
+plot(wvs_countries$Private_Business_Ownership_Mean, 
+     wvs_countries$Happiness_Mean, xlim=c(-10,10),ylim = c(1,4))
+abline(lm(wvs_countries$Private_Business_Ownership_Mean ~ wvs_countries$Happiness_Mean))
+
+plot(wvs_countries$Personal_Responsibility_Mean, 
+     wvs_countries$Happiness_Mean)
+abline(lm(wvs_countries$Personal_Responsibility_Mean ~ wvs_countries$Happiness_Mean))
+```

@@ -37,6 +37,10 @@ wvs <- subset(wvs, Happiness > 0 &
 # using max - VAL + min. Then we swap the name.
 wvs$Govt_Business_Ownership <- 10 - wvs$Govt_Business_Ownership + 1
 names(wvs)[names(wvs) == "Govt_Business_Ownership"] <- "Private_Business_Ownership"
+
+# Do the same with happiness scores so higher = better
+
+wvs$Happiness <- 4 - wvs$Happiness + 1
 ```
 
 ```{r}
@@ -83,11 +87,11 @@ For this project, the data archive was downloaded locally as a url to directly a
 
 **What is the response variable? Is it quantitative or qualitative?**
 
-The response variable is happiness score. It is quantitative. It ranges from 4 (least happy) to 1 (most happy).
+The response variable is happiness score. It is discrete quantitative. It ranges from 1 (least happy) to 4 (most happy).
 
 ### Independent Variable(s)
 
-The independent variables are *Individual_Effort,* 'incentivization of individual effort', *Govt_Business_Ownership,* 'belief in government business ownership', and *Personal_Responsibility,* 'personal responsibility over government responsibility for population'. All are quantitative and range from 1 to 10.
+The independent variables are *Individual_Effort,* 'incentivization of individual effort', *Govt_Business_Ownership,* 'belief in government business ownership', and *Personal_Responsibility,* 'personal responsibility over government responsibility for population'. All are discrete quantitative and range from 1 to 10.
 
 ![](images/clipboard-1721063137.png)
 
@@ -121,10 +125,9 @@ wvs$Individualism <- rowMeans(wvs[,c("Individual_Effort",
                                      "Personal_Responsibility")])
 
 cor(wvs$Individualism,wvs$Happiness)
-ggplot(wvs, aes(Individualism, Happiness)) +
-  geom_jitter() +
-  geom_smooth(method = 'lm',
-              geom = "smooth")
+ggplot(wvs, aes(x=Individualism, y=Happiness)) + 
+  geom_bar(stat="identity")
+
 ```
 
 ```{r}
@@ -137,7 +140,7 @@ wvs_countries <- wvs %>%
             Personal_Responsibility_Mean = mean(Personal_Responsibility))
 
 plot(wvs_countries$Individual_Effort_Mean, 
-     wvs_countries$Happiness_Mean)
+     wvs_countries$Happiness_Mean, xlim=c(-10,10),ylim = c(1,4))
 abline(lm(wvs_countries$Individual_Effort_Mean ~ wvs_countries$Happiness_Mean))
 
 plot(wvs_countries$Private_Business_Ownership_Mean, 
@@ -145,6 +148,6 @@ plot(wvs_countries$Private_Business_Ownership_Mean,
 abline(lm(wvs_countries$Private_Business_Ownership_Mean ~ wvs_countries$Happiness_Mean))
 
 plot(wvs_countries$Personal_Responsibility_Mean, 
-     wvs_countries$Happiness_Mean)
+     wvs_countries$Happiness_Mean, xlim=c(-10,10),ylim = c(1,4))
 abline(lm(wvs_countries$Personal_Responsibility_Mean ~ wvs_countries$Happiness_Mean))
 ```

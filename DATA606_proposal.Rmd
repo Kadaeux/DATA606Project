@@ -51,7 +51,7 @@ wvs[sample(nrow(wvs),5),]
 
 **You should phrase your research question in a way that matches up with the scope of inference your dataset allows for.**
 
-Are countries' populations' economic values, specifically individualist with less government oversight and responsibility, predictive of lower overall happiness?
+*Are countries with*
 
 ### Cases
 
@@ -124,30 +124,46 @@ wvs$Individualism <- rowMeans(wvs[,c("Individual_Effort",
                                      "Private_Business_Ownership",
                                      "Personal_Responsibility")])
 
-cor(wvs$Individualism,wvs$Happiness)
 ggplot(wvs, aes(x=Individualism, y=Happiness)) + 
   geom_bar(stat="identity")
 
 ```
 
 ```{r}
+
 wvs_countries <- wvs %>%
   group_by(Country) %>%
   summarise(Country = unique(Country),
-            Happiness_Mean = mean(Happiness),
-            Individual_Effort_Mean = mean(Individual_Effort),
-            Private_Business_Ownership_Mean = mean(Private_Business_Ownership),
-            Personal_Responsibility_Mean = mean(Personal_Responsibility))
+            Happiness = mean(Happiness),
+            Individual_Effort = mean(Individual_Effort),
+            Private_Business_Ownership = mean(Private_Business_Ownership),
+            Personal_Responsibility = mean(Personal_Responsibility),
+            Individualism = mean(Individualism))
 
-plot(wvs_countries$Individual_Effort_Mean, 
-     wvs_countries$Happiness_Mean, xlim=c(-10,10),ylim = c(1,4))
-abline(lm(wvs_countries$Individual_Effort_Mean ~ wvs_countries$Happiness_Mean))
+cor.test(wvs$Individualism, wvs$Happiness)
 
-plot(wvs_countries$Private_Business_Ownership_Mean, 
-     wvs_countries$Happiness_Mean, xlim=c(-10,10),ylim = c(1,4))
-abline(lm(wvs_countries$Private_Business_Ownership_Mean ~ wvs_countries$Happiness_Mean))
+ggplot(wvs_countries, aes(x=Individual_Effort, y=Happiness)) +
+  geom_point() +
+  geom_smooth(method=lm, se=TRUE)
+ggplot(wvs_countries, aes(x=Private_Business_Ownership, y=Happiness)) +
+  geom_point() +
+  geom_smooth(method=lm, se=TRUE)
+ggplot(wvs_countries, aes(x=Personal_Responsibility, y=Happiness)) +
+  geom_point() +
+  geom_smooth(method=lm, se=TRUE)
 
-plot(wvs_countries$Personal_Responsibility_Mean, 
-     wvs_countries$Happiness_Mean, xlim=c(-10,10),ylim = c(1,4))
-abline(lm(wvs_countries$Personal_Responsibility_Mean ~ wvs_countries$Happiness_Mean))
+grouped <- wvs_countries %>% 
+  pivot_longer(cols = Individual_Effort:Personal_Responsibility,
+               values_to = "grouped_individualism_scores")
+
+ind_hap_reg_mod <- lm(Happiness ~ grouped_individualism_scores, data = grouped)
+
+summary(ind_hap_reg_mod)
+
+qqnorm(ind_hap_reg_mod$residuals)
+qqline(ind_hap_reg_mod$residuals)
+
+ggplot(grouped, aes(x=grouped_individualism_scores, y=Happiness)) +
+  geom_point() +
+  geom_smooth(method=lm, se=TRUE)
 ```
